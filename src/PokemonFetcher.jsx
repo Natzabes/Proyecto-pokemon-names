@@ -55,14 +55,14 @@ function PokemonFetcher() {
             setCargando(true);
             setError(null);
 
-            const listaPkmn = dex.filter(pkmn => pkmn.name.slice(0, inputValue.length) == inputValue)
+            const listaPkmn = dex.filter(pkmn => pkmn.name.slice(0, inputValue.length) == inputValue.toLowerCase());
             const fetchedPokemon = [];
 
             for (let i = 0; i < listaPkmn.length; i++) {
                 const pkmn = listaPkmn[i];
                 const response = await fetch(pkmn.url);
                 if(!response.ok) {
-                    throw new Error(`Error fetching Pokemon with name: ${pkmn.name}`);
+                    throw new Error(`No se a encontrado a ningun: ${pkmn.name}`);
                 }
                 const data = await response.json()
                 fetchedPokemon.push({
