@@ -2,6 +2,10 @@ import { useState, useEffect } from "react";
 import './PokemonFetcher.css';
 
 function PokemonFetcher() {
+    const [dex, setDex] = useState([]);
+    const [estadoDex, setEstadoDex] = useState("cargando");
+    const [errorDex, setErrorDex] = useState(null);
+
     const [mensaje, setMensaje] = useState("");
     const [pokemon, setPokemon] = useState([]);
     const [inputValue, setInput] = useState("");
@@ -14,8 +18,32 @@ function PokemonFetcher() {
     }
 
     useEffect(() => {
+        if(estadoDex === "cargando") {
+            const conseguirDex = async () => {
+                try {
+                    const response = await fetch(`https://pokeapi.co/api/v2/pokemon?limit=1400`);
+                    if(!response.ok) {
+                        throw new Error(`Error: Hubo un problema consiguiendo la lista completa de Pokémon.`);
+                    }
+                    const listaPkmn = await response.json()
+                    setDex(listaPkmn.results);
+                    setEstadoDex("recibido")
+                    setErrorDex(null)
+                } catch(err) {
+                    setEstadoDex("error")
+                    setErrorDex(err)
+                }
+            }
+            conseguirDex()
+        }
+
+    }, [dex, estadoDex, errorDex]);
+
+    if(estadoDex === "error") return (<p>{errorDex}</p>)
+
+    useEffect(() => {
         if(cargando === true) {
-            setMensaje(`Cargando Pokémon...`);
+            setMensaje(`Cargando Pokémon..⏳`);
         } else if(error) {
             setMensaje(`Error: ${error}`);
         } else setMensaje(`Resultados: `);
@@ -27,20 +55,24 @@ function PokemonFetcher() {
             setCargando(true);
             setError(null);
 
-            const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${inputValue}`);
-            if(!response.ok) {
-                throw new Error(`No se a encontrado a ningun: ${inputValue}`);
-            }
-            const data = await response.json()
-            const fetchedPokemon = {
-                id: data.id,
-                name: data.name,
-                image: data.sprites.front_default,
-                types: data.types.map(infoTipo => infoTipo.type.name.charAt(0).toUpperCase() + infoTipo.type.name.slice(1)).join(', ')
-            }
+            const listaPkmn = dex.filter(pkmn => pkmn.name.slice(0, inputValue.length) == inputValue)
+            const fetchedPokemon = [];
 
-            setPokemon([fetchedPokemon]);
-
+            for (let i = 0; i < listaPkmn.length; i++) {
+                const pkmn = listaPkmn[i];
+                const response = await fetch(pkmn.url);
+                if(!response.ok) {
+                    throw new Error(`Error fetching Pokemon with name: ${pkmn.name}`);
+                }
+                const data = await response.json()
+                fetchedPokemon.push({
+                    id: data.id,
+                    name: data.name,
+                    image: data.sprites.front_default,
+                    types: data.types.map(infoTipo => infoTipo.type.name.charAt(0).toUpperCase() + infoTipo.type.name.slice(1)).join(', ')
+                })
+            }
+            setPokemon(fetchedPokemon);
         } catch(err) {
             setError(err.message);
             setPokemon([]);
@@ -51,9 +83,9 @@ function PokemonFetcher() {
 
     return (
         <div className="pokemon-container">
-            <h2>Busca un Pokémon: </h2>
+            <h2>Busca Pokémon: </h2>
             <form onSubmit={handleSubmit}>
-                <input type="text" placeholder="Pokémon" name="query" value={inputValue} onChange={(e) => registraCambioValor(e)} minLength={3} maxLength={30} onInvalid={(e) => e.target.setCustomValidity("Ingrese de 3-30 carácteres.")}/>
+                <input type="text" placeholder="Pokémon" name="query" value={inputValue} onChange={(e) => registraCambioValor(e)} required minLength={2} maxLength={50} onInvalid={(e) => e.target.setCustomValidity("Ingrese de 2-50 carácteres.")}/>
                 <button>Buscar</button>
                 <p>{mensaje}</p>
             </form>
