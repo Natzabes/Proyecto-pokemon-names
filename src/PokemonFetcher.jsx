@@ -29,7 +29,7 @@ function PokemonFetcher() {
 
             const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${inputValue}`);
             if(!response.ok) {
-                throw new Error(`Error fetching Pokemon with name: ${inputValue}`);
+                throw new Error(`No se a encontrado a ningun: ${inputValue}`);
             }
             const data = await response.json()
             const fetchedPokemon = {
